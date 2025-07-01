@@ -23,7 +23,7 @@ server_socket = None
 chat_initialized = False
 
 # === GitHub Update Configuration ===
-GITHUB_RAW_URL = "https://raw.githubusercontent.com/Bruhrbx/Net/main/File/Net's.py"
+GITHUB_RAW_URL = "https://raw.githubusercontent.com/Bruhrbx/Net/main/File/Net.py"
 LOCAL_APP_FILE = os.path.basename(__file__)
 
 # === Root Window ===
