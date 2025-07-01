@@ -3,7 +3,7 @@
 
 # --- KONFIGURASI PENGGUNA ---
 # !!! GANTI URL INI DENGAN URL RAW GITHUB ANDA YANG SEBENARNYA !!!
-$githubRepoRawUrl = "https://raw.githubusercontent.com/Bruhrbx/Net/main/File/Net.py"
+$githubRepoRawUrl = "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO_NAME/main/Uhhhh.py"
 $installDir = "C:\ChatApp" # Direktori tempat aplikasi akan diinstal
 $appName = "Chat App"
 $pythonExecutable = "python.exe" # Atau "py.exe" jika itu yang Anda gunakan untuk menjalankan Python
@@ -45,7 +45,6 @@ try {
 
     # Instal psutil
     Write-Host "Menginstal psutil..."
-    # Menangkap output dan kode keluar untuk debugging
     $pipInstallResult = & "$pythonPath" -m pip install psutil 2>&1
     if ($LASTEXITCODE -ne 0) {
         Write-Warning "Gagal menginstal psutil. Ini mungkin menyebabkan masalah. Output: $($pipInstallResult)"
@@ -73,10 +72,40 @@ Write-Host ""
 Write-Host "========================================" -ForegroundColor Yellow
 Write-Host "          Instalasi Selesai!          " -ForegroundColor Yellow
 Write-Host "========================================" -ForegroundColor Yellow
-Write-Host "Untuk menjalankan aplikasi, navigasikan ke:" -ForegroundColor White
-Write-Host "-> $($installDir)" -ForegroundColor Cyan
-Write-Host "Kemudian, klik dua kali 'launch.bat'." -ForegroundColor White
+
+# --- PROMPT BARU DAN PEMBUATAN SHORTCUT ---
 Write-Host ""
-Write-Host "Anda juga bisa membuat shortcut desktop untuk 'launch.bat' secara manual." -ForegroundColor DarkGray
+$choice = Read-Host "Apakah Anda ingin meluncurkan aplikasi sekarang dan membuat shortcut di desktop? (y/n)"
+
+# Selalu buat shortcut desktop (sesuai permintaan "kalau n nanti membuat shortcut di desktop")
+Write-Host "Membuat shortcut desktop..."
+try {
+    $shell = New-Object -ComObject WScript.Shell
+    $shortcutPath = (Join-Path $shell.SpecialFolders.Desktop "$($appName).lnk")
+    $shortcut = $shell.CreateShortcut($shortcutPath)
+    $shortcut.TargetPath = (Join-Path $installDir "launch.bat")
+    $shortcut.WorkingDirectory = $installDir
+    # Opsional: Atur ikon jika Anda punya file ikon (.ico) di direktori instalasi
+    # $shortcut.IconLocation = (Join-Path $installDir "nama_icon_anda.ico")
+    $shortcut.Save()
+    Write-Host "Shortcut desktop berhasil dibuat: $($shortcutPath)" -ForegroundColor Green
+} catch {
+    Write-Warning "Gagal membuat shortcut desktop. Error: $($_.Exception.Message)"
+}
+
+# Logika untuk meluncurkan aplikasi berdasarkan pilihan pengguna
+if ($choice -eq 'y') {
+    Write-Host "Meluncurkan $($appName)..."
+    try {
+        Start-Process (Join-Path $installDir "launch.bat")
+    } catch {
+        Write-Warning "Gagal meluncurkan aplikasi. Mohon jalankan 'launch.bat' dari $($installDir) secara manual. Error: $($_.Exception.Message)"
+    }
+} else {
+    Write-Host "Aplikasi tidak akan diluncurkan sekarang." -ForegroundColor Yellow
+    Write-Host "Anda dapat menjalankan aplikasi dari shortcut desktop atau dengan menjalankan 'launch.bat' di $($installDir)." -ForegroundColor White
+}
+
+Write-Host ""
 Write-Host "Terima kasih telah menggunakan $($appName)!" -ForegroundColor DarkGreen
 Read-Host "Tekan Enter untuk keluar..."
