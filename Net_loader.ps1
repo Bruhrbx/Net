@@ -115,3 +115,4 @@ Read-Host "Tekan Enter untuk keluar..."
 Write-Host ""
 Write-Host "Terima kasih telah menggunakan $($appName)!" -ForegroundColor DarkGreen
 Read-Host "Tekan Enter untuk keluar..."
+}
