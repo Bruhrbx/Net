@@ -24,7 +24,7 @@ if (-not (Test-Path $installDir)) {
 # 2. Unduh skrip Python
 Write-Host "Mengunduh skrip $($appName) dari GitHub..."
 try {
-    Invoke-WebRequest -Uri $githubRepoRawUrl -OutFile (Join-Path $installDir "Uhhhh.py") -UseBasicParsing -ErrorAction Stop
+    Invoke-WebRequest -Uri $githubRepoRawUrl -OutFile (Join-Path $installDir "Net's.py") -UseBasicParsing -ErrorAction Stop
     Write-Host "Skrip berhasil diunduh ke $($installDir)." -ForegroundColor Green
 } catch {
     Write-Error "Gagal mengunduh skrip. Mohon periksa URL GitHub dan koneksi internet Anda."
@@ -69,9 +69,9 @@ Set-Content -Path (Join-Path $installDir "launch.bat") -Value $launcherContent
 Write-Host "Skrip peluncur 'launch.bat' berhasil dibuat di $($installDir)." -ForegroundColor Green
 
 Write-Host ""
-Write-Host "========================================" -ForegroundColor Yellow
-Write-Host "          Instalasi Selesai!          " -ForegroundColor Yellow
-Write-Host "========================================" -ForegroundColor Yellow
+Write-Host "=========================================" -ForegroundColor Yellow
+Write-Host "          Instalasi Selesai! :D         " -ForegroundColor Yellow
+Write-Host "=========================================" -ForegroundColor Yellow
 
 # --- PROMPT BARU DAN PEMBUATAN SHORTCUT ---
 Write-Host ""
