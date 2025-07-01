@@ -3,9 +3,9 @@
 
 # --- KONFIGURASI PENGGUNA ---
 # !!! GANTI URL INI DENGAN URL RAW GITHUB ANDA YANG SEBENARNYA !!!
-$githubRepoRawUrl = "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO_NAME/main/Uhhhh.py"
-$installDir = "C:\ChatApp" # Direktori tempat aplikasi akan diinstal
-$appName = "Chat App"
+$githubRepoRawUrl = "https://raw.githubusercontent.com/Bruhrbx/Net/main/File/Net.py"
+$installDir = "C:\ChatApp\" # Direktori tempat aplikasi akan diinstal
+$appName = "Net's"
 $pythonExecutable = "python.exe" # Atau "py.exe" jika itu yang Anda gunakan untuk menjalankan Python
 
 # --- JANGAN UBAH KODE DI BAWAH INI KECUALI ANDA TAHU APA YANG ANDA LAKUKAN ---
