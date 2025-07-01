@@ -1,33 +1,35 @@
 import socket
 import threading
 import tkinter as tk
-from tkinter import ttk, scrolledtext, messagebox, simpledialog
+from tkinter import ttk, scrolledtext, simpledialog, messagebox
 import psutil
 import subprocess
 import platform
 import json
 import os
-import urllib.request # Import for downloading files
+import urllib.request
 
 # === Warna Tema ===
 PRIMARY = "#1E90FF"
 DARK = "#104E8B"
 LIGHT = "#E6F0FA"
 
-# === Global Variables for User Data ===
+# === Global Variables ===
 USERS_FILE = "acc.json"
 current_username = None
+reply_to_username = None
+client_socket = None
+server_socket = None
+chat_initialized = False
 
 # === GitHub Update Configuration ===
-# !!! GANTI URL INI DENGAN URL RAW GITHUB ANDA YANG SEBENARNYA !!!
-# Ini harus menuju langsung ke file Uhhhh.py di GitHub Anda.
 GITHUB_RAW_URL = "https://raw.githubusercontent.com/Bruhrbx/Net/main/File/Net.py"
-LOCAL_APP_FILE = os.path.basename(__file__) # Nama file skrip ini (misal: Uhhhh.py)
+LOCAL_APP_FILE = os.path.basename(__file__)
 
 # === Root Window ===
 window = tk.Tk()
-window.title("Net's")
-window.geometry("650x480")
+window.title("Net's Chat App")
+window.geometry("700x500")
 window.configure(bg=LIGHT)
 
 # === Style Setup ===
@@ -49,7 +51,6 @@ def load_users():
             try:
                 return json.load(f)
             except json.JSONDecodeError:
-                # Handle empty or corrupted JSON file
                 return {}
     return {}
 
@@ -61,13 +62,13 @@ def register_user(username, password):
     users = load_users()
     if username in users:
         return False, "Username sudah ada."
-    users[username] = password # In a real app, hash the password!
+    users[username] = password
     save_users(users)
     return True, "Registrasi berhasil!"
 
 def login_user(username, password):
     users = load_users()
-    if username in users and users[username] == password: # In a real app, verify hashed password!
+    if username in users and users[username] == password:
         return True, "Login berhasil!"
     return False, "Username atau password salah."
 
@@ -78,11 +79,11 @@ def authenticate_user():
     while not auth_success:
         action = messagebox.askyesno("Login/Register", "Apakah Anda sudah punya akun? (Pilih 'No' untuk Registrasi)")
 
-        if action: # User selected Yes (Login)
+        if action: # Login
             username = simpledialog.askstring("Login", "Masukkan Username:")
-            if not username: return False # User cancelled login
+            if not username: return False
             password = simpledialog.askstring("Login", "Masukkan Password:", show='*')
-            if not password: return False # User cancelled password entry
+            if not password: return False
 
             success, message = login_user(username, password)
             if success:
@@ -91,11 +92,11 @@ def authenticate_user():
                 auth_success = True
             else:
                 messagebox.showerror("Login Gagal", message + "\nCoba lagi atau daftar.")
-        else: # User selected No (Register)
+        else: # Register
             username = simpledialog.askstring("Register", "Buat Username:")
-            if not username: continue # User cancelled
+            if not username: continue
             password = simpledialog.askstring("Register", "Buat Password:", show='*')
-            if not password: continue # User cancelled
+            if not password: continue
 
             success, message = register_user(username, password)
             if success:
@@ -114,7 +115,7 @@ server_port = tk.IntVar(value=12345)
 # === Tab Home ===
 home_tab = ttk.Frame(tab_control, padding=20)
 tab_control.add(home_tab, text='Home')
-welcome_label = ttk.Label(home_tab, text="Selamat Datang Kembali!", font=("Segoe UI", 16, "bold"))
+welcome_label = ttk.Label(home_tab, text="Selamat Datang di Chat App!", font=("Segoe UI", 16, "bold"))
 welcome_label.pack(pady=50)
 
 # === Tab Server ===
@@ -124,11 +125,10 @@ tab_control.add(server_tab, text='Server')
 server_status = tk.StringVar()
 server_status.set("Server belum berjalan.")
 
-# Create a frame to hold both config and system info panels
 top_server_frame = ttk.Frame(server_tab)
 top_server_frame.pack(fill='x', padx=5, pady=10)
 
-# === Server Config Panel ===
+# Server Config Panel
 config_frame = ttk.LabelFrame(top_server_frame, text="Server Config", padding=10)
 config_frame.pack(side='left', fill='both', expand=True, padx=(0, 5))
 
@@ -141,7 +141,7 @@ ttk.Entry(config_frame, textvariable=server_ip).grid(row=1, column=1, padx=5, pa
 ttk.Label(config_frame, text="Port:").grid(row=2, column=0, sticky='w', padx=5, pady=2)
 ttk.Entry(config_frame, textvariable=server_port).grid(row=2, column=1, padx=5, pady=2)
 
-# === System Info Panel ===
+# System Info Panel
 system_info_frame = ttk.LabelFrame(top_server_frame, text="System Info", padding=10)
 system_info_frame.pack(side='right', fill='both', expand=True, padx=(5, 0))
 
@@ -155,7 +155,7 @@ ttk.Label(system_info_frame, textvariable=ping_latency_var).pack(anchor='w', pad
 
 def update_system_info():
     # CPU Usage
-    cpu_percent = psutil.cpu_percent(interval=None) # Non-blocking
+    cpu_percent = psutil.cpu_percent(interval=None)
     cpu_usage_var.set(f"CPU: {cpu_percent:.1f}%")
 
     # Memory Usage
@@ -163,11 +163,10 @@ def update_system_info():
     mem_usage_var.set(f"Mem: {mem_percent:.1f}%")
 
     # Ping Latency
-    target_ip = "8.8.8.8" # Google DNS
+    target_ip = "8.8.8.8"
     param = '-n' if platform.system().lower() == 'windows' else '-c'
     command = ['ping', param, '1', target_ip]
 
-    # Tambahkan argumen untuk menyembunyikan jendela CMD di Windows
     kwargs = {
         'capture_output': True,
         'text': True,
@@ -177,34 +176,31 @@ def update_system_info():
         kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW
 
     try:
-        process = subprocess.run(command, **kwargs) # Gunakan kwargs di sini
+        process = subprocess.run(command, **kwargs)
         output = process.stdout
         latency = "--"
         if platform.system().lower() == 'windows':
-            # Example: "Minimum = 10ms, Maximum = 12ms, Average = 11ms"
             if "Average =" in output:
                 avg_line = [line for line in output.split('\n') if "Average =" in line]
                 if avg_line:
                     avg_ms = avg_line[0].split("Average =")[1].split("ms")[0].strip()
                     latency = f"{avg_ms}ms"
-        else: # Linux/macOS
-            # Example: "round-trip min/avg/max/stddev = 10.123/11.456/12.789/0.500 ms"
+        else:
             if "avg/" in output:
                 parts = output.split("avg/")[1].split(" ")[0].split("/")
                 if len(parts) >= 2:
-                    latency = f"{float(parts[1]):.1f}ms" # average
+                    latency = f"{float(parts[1]):.1f}ms"
         ping_latency_var.set(f"Ping: {latency}")
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):
         ping_latency_var.set("Ping: Gagal")
     except Exception as e:
         ping_latency_var.set(f"Ping: Error ({e})")
 
-    window.after(3000, update_system_info) # Update every 3 seconds
+    window.after(3000, update_system_info)
 
-# Initial call to start periodic updates
 window.after(100, update_system_info)
 
-# === Server Log Panel ===
+# Server Log Panel
 server_log = scrolledtext.ScrolledText(server_tab, height=12, state='disabled', wrap='word', bg='white')
 server_log.pack(padx=5, pady=(5, 10), fill='both', expand=True)
 
@@ -215,31 +211,49 @@ def log_server(text):
     server_log.yview(tk.END)
 
 def start_server():
+    global server_socket
+    
     def handle_client(conn, addr):
         log_server(f"[+] Client {addr} terhubung.")
-        # When a client connects, the server would ideally prompt for username or receive it.
-        # For this client-side only change, we assume the server will eventually handle usernames.
-        # You'd need to modify the server to receive username upon connection.
-        client_username = f"Client_{addr[1]}" # Placeholder
-        # In a real scenario, the server would manage these connected usernames
-
-        while True:
-            try:
-                # The server should parse incoming messages to check for username (e.g., if client sends it
-                # as part of the message or via a separate protocol)
+        client_username = None
+        
+        try:
+            # Receive username from client
+            username_msg = conn.recv(1024).decode()
+            if username_msg.startswith("USERNAME:"):
+                client_username = username_msg.split(":")[1]
+                log_server(f"[+] {addr} login sebagai {client_username}")
+            
+            while True:
                 msg = conn.recv(1024).decode()
                 if msg:
-                    # If the server knows the client's username, it would prepend it here
-                    update_chat_display(f"{client_username}: {msg}")
-                    # And broadcast to all other connected clients with the correct sender username
+                    if client_username:
+                        broadcast_msg = f"{client_username}: {msg}"
+                    else:
+                        broadcast_msg = f"{addr}: {msg}"
+                    
+                    log_server(broadcast_msg)
+                    # Broadcast to all clients
+                    for client in clients:
+                        try:
+                            client.send(broadcast_msg.encode())
+                        except:
+                            continue
                 else:
                     break
-            except:
-                break
+        except:
+            pass
+        
         conn.close()
-        log_server(f"[-] Client {addr} terputus.")
+        if client_username:
+            log_server(f"[-] {client_username} ({addr}) terputus.")
+        else:
+            log_server(f"[-] Client {addr} terputus.")
 
     def server_thread():
+        global server_socket, clients
+        clients = []
+        
         try:
             ip = server_ip.get()
             port = server_port.get()
@@ -251,6 +265,7 @@ def start_server():
 
             while True:
                 conn, addr = server_socket.accept()
+                clients.append(conn)
                 threading.Thread(target=handle_client, args=(conn, addr), daemon=True).start()
         except Exception as e:
             log_server(f"[Error] {e}")
@@ -283,102 +298,65 @@ ttk.Label(online_users_frame, textvariable=total_players_var).pack(pady=(0, 5))
 online_users_listbox = tk.Listbox(online_users_frame, height=10, bg='white')
 online_users_listbox.pack(expand=True, fill='both')
 
-# --- PENTING ---
-# Bagian "Online Users" dan "Total Players" ini hanya menampilkan UI-nya.
-# Untuk mendapatkan data aktual (siapa yang online dan berapa totalnya),
-# SERVER Anda perlu dimodifikasi untuk:
-# 1. Mengelola daftar pengguna yang terhubung.
-# 2. Mengirimkan daftar ini ke semua klien secara berkala atau saat ada perubahan.
-# 3. Klien kemudian akan memperbarui `online_users_listbox` dan `total_players_var`.
-# Saat ini, data di panel ini hanya placeholder.
-
 input_frame = tk.Frame(chat_tab, bg=LIGHT)
 input_frame.pack(fill='x', padx=5, pady=5)
 
 msg_entry = tk.Entry(input_frame)
 msg_entry.pack(side='left', fill='x', expand=True, padx=(0, 5), pady=5)
 
-# === Bind the Enter key to send_msg function ===
-msg_entry.bind("<Return>", lambda event: send_msg())
-# ===============================================
-
-send_button = tk.Button(input_frame, text="Kirim", bg=PRIMARY, fg='white', command=lambda: send_msg())
-send_button.pack(side='right', pady=5)
-
-def update_chat_display(text):
-    chat_display.insert(tk.END, text + "\n")
-    chat_display.yview(tk.END)
-
-client_socket = None
-chat_initialized = False
+def set_reply_target():
+    global reply_to_username
+    reply_to_username = simpledialog.askstring("Balas ke", "Masukkan nama pengguna yang ingin Anda balas:")
+    if reply_to_username:
+        messagebox.showinfo("Balas", f"Akan membalas ke {reply_to_username}")
 
 def send_msg():
-    global client_socket
+    global client_socket, reply_to_username
     msg = msg_entry.get().strip()
     if msg and client_socket and current_username:
-        full_msg = f"({current_username}) {msg}" # Prepend username to outgoing message
-        update_chat_display(f"Anda: {full_msg}") # Display for local user
+        if reply_to_username:
+            full_msg = f"{current_username} >> {reply_to_username} : {msg}"
+            reply_to_username = None
+        else:
+            full_msg = f"{current_username}: {msg}"
+        update_chat_display(f"Anda: {full_msg}")
         try:
-            client_socket.send(full_msg.encode()) # Send the message with username
+            client_socket.send(full_msg.encode())
         except Exception as e:
             messagebox.showerror("Error", f"Gagal mengirim pesan: {e}")
     elif not current_username:
         messagebox.showwarning("Belum Login", "Anda harus login atau registrasi terlebih dahulu untuk chat.")
     msg_entry.delete(0, tk.END)
 
-# This function would be updated to receive messages from the server,
-# ideally, the server would send the message prefixed with the sender's username.
+msg_entry.bind("<Return>", lambda event: send_msg())
+
+reply_button = tk.Button(input_frame, text="Balas", bg='orange', fg='white', command=set_reply_target)
+reply_button.pack(side='right', padx=(0, 5), pady=5)
+
+send_button = tk.Button(input_frame, text="Kirim", bg=PRIMARY, fg='white', command=send_msg)
+send_button.pack(side='right', pady=5)
+
+def update_chat_display(text):
+    chat_display.insert(tk.END, text + "\n")
+    chat_display.yview(tk.END)
+
 def receive_messages():
     global client_socket
     if not client_socket: return
+    
     while True:
         try:
             msg = client_socket.recv(1024).decode()
             if msg:
-                # The server should send the username with the message for other clients
-                # For example, if server sends "([sender_username]) message_content"
                 update_chat_display(msg)
             else:
-                # Server disconnected
                 update_chat_display("[SERVER] Server terputus.")
                 client_socket.close()
                 break
         except Exception as e:
-            # Error during reception (e.g., socket closed)
             update_chat_display(f"[ERROR] Terjadi kesalahan saat menerima pesan: {e}")
             client_socket.close()
             break
-
-# === Update Function ===
-def update_application():
-    response = messagebox.askyesno(
-        "Update Aplikasi",
-        "Ini akan mencoba mengunduh versi terbaru aplikasi dari GitHub dan menimpa file lokal Anda.\n"
-        "Aplikasi perlu di-restart agar perubahan berlaku.\n"
-        "Apakah Anda ingin melanjutkan?"
-    )
-    if not response:
-        return
-
-    try:
-        messagebox.showinfo("Update", "Mengunduh update... Mohon tunggu.")
-        # Download the new version
-        with urllib.request.urlopen(GITHUB_RAW_URL) as response:
-            new_code = response.read().decode('utf-8')
-
-        # Overwrite the current script file
-        with open(LOCAL_APP_FILE, 'w', encoding='utf-8') as f:
-            f.write(new_code)
-
-        messagebox.showinfo(
-            "Update Berhasil!",
-            "Aplikasi berhasil diupdate.\n"
-            "Mohon tutup dan jalankan kembali aplikasi ini agar perubahan berlaku."
-        )
-    except Exception as e:
-        messagebox.showerror("Update Gagal", f"Gagal mengunduh atau menulis update: {e}\n"
-                                          "Pastikan URL GitHub benar dan ada koneksi internet.")
-
 
 # === Tab Settings ===
 settings_tab = ttk.Frame(tab_control, padding=10)
@@ -396,21 +374,17 @@ def apply_theme_colors():
     LIGHT = light_color_var.get()
 
     window.configure(bg=LIGHT)
-    
     style.configure("TNotebook", background=LIGHT)
     style.configure("TNotebook.Tab", background=PRIMARY)
     style.map("TNotebook.Tab", background=[("selected", DARK)])
-    
     style.configure("TLabel", background=LIGHT)
     style.configure("TButton", background=PRIMARY, foreground="white")
     style.map("TButton", background=[("active", DARK)])
 
-    # Update background of frames/widgets that don't use ttk styles directly
     input_frame.configure(bg=LIGHT)
     chat_display.configure(bg="white")
     server_log.configure(bg="white")
-    online_users_listbox.configure(bg="white") # Update listbox background
-
+    online_users_listbox.configure(bg="white")
 
 settings_frame = ttk.LabelFrame(settings_tab, text="Theme Colors", padding=10)
 settings_frame.pack(fill='x', padx=5, pady=10)
@@ -426,12 +400,38 @@ ttk.Entry(settings_frame, textvariable=light_color_var).grid(row=2, column=1, pa
 
 ttk.Button(settings_frame, text="Apply Colors", command=apply_theme_colors).grid(row=3, column=0, columnspan=2, pady=10)
 
-# === Update Button ===
+# Update Function
+def update_application():
+    response = messagebox.askyesno(
+        "Update Aplikasi",
+        "Ini akan mencoba mengunduh versi terbaru aplikasi dari GitHub dan menimpa file lokal Anda.\n"
+        "Aplikasi perlu di-restart agar perubahan berlaku.\n"
+        "Apakah Anda ingin melanjutkan?"
+    )
+    if not response:
+        return
+
+    try:
+        messagebox.showinfo("Update", "Mengunduh update... Mohon tunggu.")
+        with urllib.request.urlopen(GITHUB_RAW_URL) as response:
+            new_code = response.read().decode('utf-8')
+
+        with open(LOCAL_APP_FILE, 'w', encoding='utf-8') as f:
+            f.write(new_code)
+
+        messagebox.showinfo(
+            "Update Berhasil!",
+            "Aplikasi berhasil diupdate.\n"
+            "Mohon tutup dan jalankan kembali aplikasi ini agar perubahan berlaku."
+        )
+    except Exception as e:
+        messagebox.showerror("Update Gagal", f"Gagal mengunduh atau menulis update: {e}\n"
+                                          "Pastikan URL GitHub benar dan ada koneksi internet.")
+
 update_frame = ttk.LabelFrame(settings_tab, text="App Update", padding=10)
 update_frame.pack(fill='x', padx=5, pady=10)
 ttk.Label(update_frame, text="Dapatkan versi terbaru aplikasi dari GitHub.").pack(pady=5)
 ttk.Button(update_frame, text="Update Me! :D", command=update_application).pack(pady=5)
-
 
 # === Saat Tab Chat Dibuka (Koneksi Client) ===
 def on_tab_change(event):
@@ -440,7 +440,7 @@ def on_tab_change(event):
     if selected_tab == "Chat" and not chat_initialized:
         if not current_username:
             messagebox.showwarning("Login Diperlukan", "Anda harus login atau registrasi terlebih dahulu untuk terhubung ke chat.")
-            tab_control.select(home_tab) # Go back to home tab if not logged in
+            tab_control.select(home_tab)
             return
 
         ip = simpledialog.askstring("Koneksi ke Server", "Masukkan IP Server:", initialvalue=server_ip.get())
@@ -449,26 +449,21 @@ def on_tab_change(event):
             try:
                 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 client_socket.connect((ip, port))
-                update_chat_display(f"[✓] Terhubung ke server {ip}:{port}.")
-                chat_initialized = True
-                # Start receiving messages in a separate thread
-                threading.Thread(target=receive_messages, daemon=True).start()
-                # Send username to server upon connection (server needs to handle this)
                 client_socket.send(f"USERNAME:{current_username}".encode())
+                update_chat_display(f"[✓] Terhubung ke server {ip}:{port} sebagai {current_username}")
+                chat_initialized = True
+                threading.Thread(target=receive_messages, daemon=True).start()
             except Exception as e:
                 update_chat_display(f"[Error] Tidak dapat terhubung ke server: {e}")
-                chat_initialized = False # Reset if connection fails
+                chat_initialized = False
 
 tab_control.bind("<<NotebookTabChanged>>", on_tab_change)
-
 tab_control.pack(expand=1, fill='both')
 
 # Run authentication dialog before starting the main loop
 if not authenticate_user():
-    # If authentication fails or is cancelled, exit the application
     window.destroy()
 else:
-    # Update Home tab welcome message after successful authentication
     if current_username:
-        welcome_label.config(text=f"Selamat Datang Kembali, {current_username}!")
+        welcome_label.config(text=f"Selamat Datang, {current_username}!")
     window.mainloop()
