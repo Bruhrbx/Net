@@ -21,12 +21,12 @@ current_username = None
 # === GitHub Update Configuration ===
 # !!! GANTI URL INI DENGAN URL RAW GITHUB ANDA YANG SEBENARNYA !!!
 # Ini harus menuju langsung ke file Uhhhh.py di GitHub Anda.
-GITHUB_RAW_URL = "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO_NAME/main/Uhhhh.py"
+GITHUB_RAW_URL = "https://raw.githubusercontent.com/Bruhrbx/Net/main/File/Net.py"
 LOCAL_APP_FILE = os.path.basename(__file__) # Nama file skrip ini (misal: Uhhhh.py)
 
 # === Root Window ===
 window = tk.Tk()
-window.title("Chat App - Server & Client")
+window.title("Net's")
 window.geometry("650x480")
 window.configure(bg=LIGHT)
 
