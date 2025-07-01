@@ -99,6 +99,9 @@ if ($choice -eq 'y') {
     Write-Host "Gunakan shortcut desktop atau file 'launch.bat' untuk membuka aplikasi." -ForegroundColor White
 }
 
+{
 # 7. Akhiri
 Write-Host "`nTerima kasih telah menggunakan $appName!" -ForegroundColor DarkGreen
 Read-Host "Tekan Enter untuk keluar..."
+
+}
