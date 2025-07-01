@@ -7,6 +7,7 @@ $githubRepoRawUrl = "https://raw.githubusercontent.com/Bruhrbx/Net/main/File/Net
 $installDir = "C:\ChatApp\" # Direktori tempat aplikasi akan diinstal
 $appName = "Net's"
 $pythonExecutable = "python.exe" # Atau "py.exe" jika itu yang Anda gunakan untuk menjalankan Python
+$pythonAppFileName = "Net's.py" # Nama file Python yang akan diunduh dan dijalankan
 
 # --- JANGAN UBAH KODE DI BAWAH INI KECUALI ANDA TAHU APA YANG ANDA LAKUKAN ---
 
@@ -24,7 +25,7 @@ if (-not (Test-Path $installDir)) {
 # 2. Unduh skrip Python
 Write-Host "Mengunduh skrip $($appName) dari GitHub..."
 try {
-    Invoke-WebRequest -Uri $githubRepoRawUrl -OutFile (Join-Path $installDir "Net's.py") -UseBasicParsing -ErrorAction Stop
+    Invoke-WebRequest -Uri $githubRepoRawUrl -OutFile (Join-Path $installDir $pythonAppFileName) -UseBasicParsing -ErrorAction Stop
     Write-Host "Skrip berhasil diunduh ke $($installDir)." -ForegroundColor Green
 } catch {
     Write-Error "Gagal mengunduh skrip. Mohon periksa URL GitHub dan koneksi internet Anda."
@@ -61,7 +62,7 @@ try {
 Write-Host "Membuat skrip peluncur 'launch.bat'..."
 $launcherContent = @"
 @echo off
-"$pythonPath" "$installDir\Uhhhh.py"
+"$pythonPath" "$installDir\$pythonAppFileName"
 pause
 "@
 Set-Content -Path (Join-Path $installDir "launch.bat") -Value $launcherContent
@@ -70,7 +71,7 @@ Write-Host "Skrip peluncur 'launch.bat' berhasil dibuat di $($installDir)." -For
 
 Write-Host ""
 Write-Host "=========================================" -ForegroundColor Yellow
-Write-Host "          Instalasi Selesai! :D         " -ForegroundColor Yellow
+Write-Host "          Instalasi Selesai! :D          " -ForegroundColor Yellow
 Write-Host "=========================================" -ForegroundColor Yellow
 
 # --- PROMPT BARU DAN PEMBUATAN SHORTCUT ---
@@ -104,6 +105,11 @@ if ($choice -eq 'y') {
 } else {
     Write-Host "Aplikasi tidak akan diluncurkan sekarang." -ForegroundColor Yellow
     Write-Host "Anda dapat menjalankan aplikasi dari shortcut desktop atau dengan menjalankan 'launch.bat' di $($installDir)." -ForegroundColor White
+}
+
+Write-Host ""
+Write-Host "Terima kasih telah menggunakan $($appName)!" -ForegroundColor DarkGreen
+Read-Host "Tekan Enter untuk keluar..."
 }
 
 Write-Host ""
