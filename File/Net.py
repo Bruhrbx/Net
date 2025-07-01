@@ -7,6 +7,7 @@ import subprocess
 import platform
 import json
 import os
+import urllib.request # Import for downloading files
 
 # === Warna Tema ===
 PRIMARY = "#1E90FF"
@@ -16,6 +17,12 @@ LIGHT = "#E6F0FA"
 # === Global Variables for User Data ===
 USERS_FILE = "acc.json"
 current_username = None
+
+# === GitHub Update Configuration ===
+# !!! GANTI URL INI DENGAN URL RAW GITHUB ANDA YANG SEBENARNYA !!!
+# Ini harus menuju langsung ke file Uhhhh.py di GitHub Anda.
+GITHUB_RAW_URL = "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO_NAME/main/Uhhhh.py"
+LOCAL_APP_FILE = os.path.basename(__file__) # Nama file skrip ini (misal: Uhhhh.py)
 
 # === Root Window ===
 window = tk.Tk()
@@ -39,7 +46,11 @@ tab_control = ttk.Notebook(window)
 def load_users():
     if os.path.exists(USERS_FILE):
         with open(USERS_FILE, 'r') as f:
-            return json.load(f)
+            try:
+                return json.load(f)
+            except json.JSONDecodeError:
+                # Handle empty or corrupted JSON file
+                return {}
     return {}
 
 def save_users(users):
@@ -69,9 +80,9 @@ def authenticate_user():
 
         if action: # User selected Yes (Login)
             username = simpledialog.askstring("Login", "Masukkan Username:")
-            if not username: continue # User cancelled
+            if not username: return False # User cancelled login
             password = simpledialog.askstring("Login", "Masukkan Password:", show='*')
-            if not password: continue # User cancelled
+            if not password: return False # User cancelled password entry
 
             success, message = login_user(username, password)
             if success:
@@ -93,9 +104,7 @@ def authenticate_user():
                 auth_success = True
             else:
                 messagebox.showerror("Registrasi Gagal", message)
-
-    # Update Home tab welcome message
-    welcome_label.config(text=f"Selamat Datang Kembali, {current_username}!")
+    return auth_success
 
 # === Variabel Server Config ===
 server_name = tk.StringVar(value="Server A")
@@ -289,6 +298,10 @@ input_frame.pack(fill='x', padx=5, pady=5)
 msg_entry = tk.Entry(input_frame)
 msg_entry.pack(side='left', fill='x', expand=True, padx=(0, 5), pady=5)
 
+# === Bind the Enter key to send_msg function ===
+msg_entry.bind("<Return>", lambda event: send_msg())
+# ===============================================
+
 send_button = tk.Button(input_frame, text="Kirim", bg=PRIMARY, fg='white', command=lambda: send_msg())
 send_button.pack(side='right', pady=5)
 
@@ -336,6 +349,37 @@ def receive_messages():
             client_socket.close()
             break
 
+# === Update Function ===
+def update_application():
+    response = messagebox.askyesno(
+        "Update Aplikasi",
+        "Ini akan mencoba mengunduh versi terbaru aplikasi dari GitHub dan menimpa file lokal Anda.\n"
+        "Aplikasi perlu di-restart agar perubahan berlaku.\n"
+        "Apakah Anda ingin melanjutkan?"
+    )
+    if not response:
+        return
+
+    try:
+        messagebox.showinfo("Update", "Mengunduh update... Mohon tunggu.")
+        # Download the new version
+        with urllib.request.urlopen(GITHUB_RAW_URL) as response:
+            new_code = response.read().decode('utf-8')
+
+        # Overwrite the current script file
+        with open(LOCAL_APP_FILE, 'w', encoding='utf-8') as f:
+            f.write(new_code)
+
+        messagebox.showinfo(
+            "Update Berhasil!",
+            "Aplikasi berhasil diupdate.\n"
+            "Mohon tutup dan jalankan kembali aplikasi ini agar perubahan berlaku."
+        )
+    except Exception as e:
+        messagebox.showerror("Update Gagal", f"Gagal mengunduh atau menulis update: {e}\n"
+                                          "Pastikan URL GitHub benar dan ada koneksi internet.")
+
+
 # === Tab Settings ===
 settings_tab = ttk.Frame(tab_control, padding=10)
 tab_control.add(settings_tab, text='Settings')
@@ -382,6 +426,12 @@ ttk.Entry(settings_frame, textvariable=light_color_var).grid(row=2, column=1, pa
 
 ttk.Button(settings_frame, text="Apply Colors", command=apply_theme_colors).grid(row=3, column=0, columnspan=2, pady=10)
 
+# === Update Button ===
+update_frame = ttk.LabelFrame(settings_tab, text="App Update", padding=10)
+update_frame.pack(fill='x', padx=5, pady=10)
+ttk.Label(update_frame, text="Dapatkan versi terbaru aplikasi dari GitHub.").pack(pady=5)
+ttk.Button(update_frame, text="Update Me! :D", command=update_application).pack(pady=5)
+
 
 # === Saat Tab Chat Dibuka (Koneksi Client) ===
 def on_tab_change(event):
@@ -414,6 +464,11 @@ tab_control.bind("<<NotebookTabChanged>>", on_tab_change)
 tab_control.pack(expand=1, fill='both')
 
 # Run authentication dialog before starting the main loop
-authenticate_user()
-
-window.mainloop()
+if not authenticate_user():
+    # If authentication fails or is cancelled, exit the application
+    window.destroy()
+else:
+    # Update Home tab welcome message after successful authentication
+    if current_username:
+        welcome_label.config(text=f"Selamat Datang Kembali, {current_username}!")
+    window.mainloop()
