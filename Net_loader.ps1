@@ -1,7 +1,8 @@
 # Script PowerShell untuk menginstal Python, tkinter, psutil, dan setup Net's
-Write-Host "================================"
-Write-Host "= Welcome to loader Net's 📦! ="
-Write-Host "================================"
+Write-Host "================================="
+Write-Host "=  Welcome to loader Net's 📦!  ="
+Write-Host "= https://discord.gg/f9HGQkDGgb ="
+Write-Host "================================="
 Write-Host ""
 
 # 1. Menginstal Python (dengan pip) jika belum terinstal
