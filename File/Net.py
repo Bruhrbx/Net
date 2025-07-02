@@ -32,7 +32,7 @@ LOCAL_APP_FILE = os.path.basename(__file__)
 # === Root Window ===
 window = tk.Tk()
 window.title("Net's Chat App")
-window.geometry("800x500")
+window.geometry("840x536")
 window.configure(bg=LIGHT)
 
 # === Style Setup ===
