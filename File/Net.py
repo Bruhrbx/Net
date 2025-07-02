@@ -16,13 +16,14 @@ LIGHT = "#E6F0FA"
 
 # === Global Variables ===
 USERS_FILE = "acc.json"
+RECENT_GROUPS_FILE = "recent_groups.json"
 current_username = None
 reply_to_username = None
 client_socket = None
 server_socket = None
 chat_initialized = False
 clients = []
-online_users = {}  # Track online users: {username: address}
+online_users = {}
 
 # === GitHub Update Configuration ===
 GITHUB_RAW_URL = "https://raw.githubusercontent.com/Bruhrbx/Net/main/File/Net.py"
@@ -109,16 +110,117 @@ def authenticate_user():
                 messagebox.showerror("Registration Failed", message)
     return auth_success
 
+# === Recent Groups Functions ===
+def load_recent_groups():
+    if os.path.exists(RECENT_GROUPS_FILE):
+        with open(RECENT_GROUPS_FILE, 'r') as f:
+            try:
+                return json.load(f)
+            except json.JSONDecodeError:
+                return {}
+    return {"Net's Office": "lOsT iP LOl"}
+
+def save_recent_groups(groups):
+    with open(RECENT_GROUPS_FILE, 'w') as f:
+        json.dump(groups, f, indent=4)
+
+def add_recent_group(group_name, address):
+    groups = load_recent_groups()
+    groups[group_name] = address
+    save_recent_groups(groups)
+
 # === Server Config Variables ===
-server_name = tk.StringVar(value="Server A")
+server_name = tk.StringVar(value="Net's")
 server_ip = tk.StringVar(value="127.0.0.1")
 server_port = tk.IntVar(value=12345)
 
 # === Home Tab ===
-home_tab = ttk.Frame(tab_control, padding=20)
-tab_control.add(home_tab, text='Home')
-welcome_label = ttk.Label(home_tab, text="Welcome to Chat App!", font=("Segoe UI", 16, "bold"))
-welcome_label.pack(pady=50)
+def create_home_tab():
+    global home_tab
+    home_tab = ttk.Frame(tab_control, padding=20)
+    tab_control.add(home_tab, text='Home')
+    
+    welcome_label = ttk.Label(home_tab, 
+                            text=f"Welcome, {current_username}!" if current_username else "Welcome to Chat App!",
+                            font=("Segoe UI", 16, "bold"))
+    welcome_label.pack(pady=(0, 20))
+
+    # Main container frame
+    main_frame = ttk.Frame(home_tab)
+    main_frame.pack(fill='both', expand=True)
+
+    # Left column (Announcements)
+    left_frame = ttk.Frame(main_frame)
+    left_frame.pack(side='left', fill='both', expand=True, padx=5)
+
+    # Announcement Section
+    announcement_frame = ttk.LabelFrame(left_frame, text="📢 Announcements", padding=10)
+    announcement_frame.pack(fill='both', expand=True, pady=5)
+
+    announcements = [
+        "🎉 New Feature: Recents Server",
+        "📢 Join our group: 'discord.gg/f9HGQkDGgb"
+    ]
+
+    announcement_text = scrolledtext.ScrolledText(
+        announcement_frame, 
+        height=6, 
+        wrap='word', 
+        bg='white',
+        font=("Arial", 10)
+    )
+    for item in announcements:
+        announcement_text.insert('end', f"• {item}\n\n")
+    announcement_text.config(state='disabled')
+    announcement_text.pack(fill='both', expand=True)
+
+    # Right column (Recent Groups)
+    right_frame = ttk.Frame(main_frame)
+    right_frame.pack(side='right', fill='y', padx=5)
+
+    recent_groups_frame = ttk.LabelFrame(right_frame, text="====== Recent Groups ======", padding=10)
+    recent_groups_frame.pack(fill='both', expand=True, pady=5)
+
+    recent_groups = load_recent_groups()
+
+    group_listbox = tk.Listbox(
+        recent_groups_frame,
+        height=6,
+        bg='white',
+        font=("Courier", 10),
+        relief='flat'
+    )
+    
+    for group, address in recent_groups.items():
+        group_listbox.insert('end', f"{group:15} {address}")
+
+    scrollbar = ttk.Scrollbar(recent_groups_frame)
+    scrollbar.pack(side='right', fill='y')
+    group_listbox.config(yscrollcommand=scrollbar.set)
+    scrollbar.config(command=group_listbox.yview)
+
+    group_listbox.pack(fill='both', expand=True)
+
+    def connect_to_selected_group():
+        selection = group_listbox.curselection()
+        if selection:
+            selected_text = group_listbox.get(selection[0])
+            parts = selected_text.split()
+            group_name = ' '.join(parts[:-1])
+            address = parts[-1]
+            
+            server_address_var.set(address)
+            tab_control.select(chat_tab)
+            messagebox.showinfo("Connecting", f"Connecting to {group_name}...")
+
+    connect_btn = ttk.Button(
+        recent_groups_frame,
+        text="Connect to Selected",
+        command=connect_to_selected_group
+    )
+    connect_btn.pack(pady=5, fill='x')
+
+create_home_tab()
 
 # === Server Tab ===
 server_tab = ttk.Frame(tab_control, padding=10)
@@ -220,7 +322,6 @@ def start_server():
         client_username = None
         
         try:
-            # Receive username from client
             username_msg = conn.recv(1024).decode()
             if username_msg.startswith("USERNAME:"):
                 client_username = username_msg.split(":")[1]
@@ -237,7 +338,6 @@ def start_server():
                         broadcast_msg = f"{addr}: {msg}"
                     
                     log_server(broadcast_msg)
-                    # Broadcast to all clients
                     for client in clients:
                         try:
                             client.send(broadcast_msg.encode())
@@ -311,7 +411,6 @@ def connect_to_server():
     global chat_initialized, client_socket
     
     if chat_initialized:
-        # Disconnect from server
         try:
             client_socket.close()
         except:
@@ -322,7 +421,6 @@ def connect_to_server():
         update_chat_display("[✓] Disconnected from server.")
         return
     
-    # Connect to server
     if not current_username:
         messagebox.showwarning("Login Required", "You must login or register first to chat.")
         return
@@ -338,6 +436,12 @@ def connect_to_server():
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client_socket.connect((ip, port))
         client_socket.send(f"USERNAME:{current_username}".encode())
+        
+        # Add to recent groups
+        group_name = simpledialog.askstring("Group Name", "Enter name for this group:")
+        if group_name:
+            add_recent_group(group_name, f"{ip}:{port}")
+        
         update_chat_display(f"[✓] Connected to {ip}:{port} as {current_username}")
         chat_initialized = True
         connect_button.config(text="Disconnect")
@@ -515,7 +619,7 @@ def update_application():
 
 update_frame = ttk.LabelFrame(settings_tab, text="App Update", padding=10)
 update_frame.pack(fill='x', padx=5, pady=10)
-ttk.Label(update_frame, text="Get the latest version from GitHub. (V0.1 alpah) ").pack(pady=5)
+ttk.Label(update_frame, text="Get the latest version from GitHub.").pack(pady=5)
 ttk.Button(update_frame, text="Update Me! :D", command=update_application).pack(pady=5)
 
 # Run authentication before main loop
@@ -523,6 +627,7 @@ if not authenticate_user():
     window.destroy()
 else:
     if current_username:
-        welcome_label.config(text=f"Welcome, {current_username}!")
+        welcome_label = ttk.Label(home_tab, text=f"Welcome, {current_username}!", font=("Segoe UI", 16, "bold"))
+        welcome_label.pack(pady=(0, 20))
     tab_control.pack(expand=1, fill='both')
     window.mainloop()
