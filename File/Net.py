@@ -160,6 +160,8 @@ def create_home_tab():
     announcements = [
         "🎉 New Feature: Recents Server",
         "📢 Join our group: 'discord.gg/f9HGQkDGgb"
+
+        "📢 Coming Version: '2.1"
     ]
 
     announcement_text = scrolledtext.ScrolledText(
@@ -619,7 +621,7 @@ def update_application():
 
 update_frame = ttk.LabelFrame(settings_tab, text="App Update", padding=10)
 update_frame.pack(fill='x', padx=5, pady=10)
-ttk.Label(update_frame, text="Get the latest version from GitHub.").pack(pady=5)
+ttk.Label(update_frame, text="Get the latest version from GitHub. | v2.0 ").pack(pady=5)
 ttk.Button(update_frame, text="Update Me! :D", command=update_application).pack(pady=5)
 
 # Run authentication before main loop
