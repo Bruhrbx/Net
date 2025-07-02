@@ -160,7 +160,6 @@ def create_home_tab():
     announcements = [
         "🎉 New Feature: Recents Server",
         "📢 Join our group: 'discord.gg/f9HGQkDGgb"
-
         "📢 Coming Version: '2.1"
     ]
 
