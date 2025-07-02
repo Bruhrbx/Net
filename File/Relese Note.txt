@@ -1,0 +1,22 @@
+=============== [NEW] Version ===============
+
+2.0 | New !
+1.0 | Older
+
+=============== [New] Features ===============
+
+Home Tab
+  L  Announcement Panel
+  L  Recent Grup
+
+Server Tab
+  L  No Update
+
+Chat Tab
+  L  No Update
+
+Settings Tab
+  L  No update
+
+
+===============================================
