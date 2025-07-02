@@ -1,61 +1,48 @@
-# 1. Cek Python
-$python = Get-Command python -ErrorAction SilentlyContinue
-if (-not $python) {
-    Write-Host "❌ Python tidak ditemukan. Mengarahkan ke situs instalasi..."
-    Start-Process "https://www.python.org/downloads/"
-    exit
+# Script PowerShell untuk menginstal Python, tkinter, psutil, dan setup Net's
+Write-Host "================================"
+Write-Host "= Welcome to loader Net's 📦! ="
+Write-Host "================================"
+Write-Host ""
+
+# 1. Menginstal Python (dengan pip) jika belum terinstal
+if (-not (Test-Path -Path "C:\Python*")) {
+    Write-Host "🐍 Menginstal Python..."
+    Invoke-WebRequest -Uri "https://www.python.org/ftp/python/3.11.4/python-3.11.4-amd64.exe" -OutFile "$env:TEMP\python-installer.exe"
+    Start-Process -Wait -FilePath "$env:TEMP\python-installer.exe" -ArgumentList "/quiet", "InstallAllUsers=1", "PrependPath=1", "Include_test=0"
+    Remove-Item -Path "$env:TEMP\python-installer.exe"
 }
 
-# 2. Pastikan pip aktif
-Write-Host "🛠 Memastikan pip tersedia..."
-python -m ensurepip --default-pip
+# 2. Memastikan pip dan modul yang diperlukan terinstal
+Write-Host "🔍️ Memastikan pip dan modul yang diperlukan terinstal..."
 python -m pip install --upgrade pip
+pip install psutil
 
-# 3. Instal modul yang diperlukan
-$modules = @("tkinter", "psutil", "requests", "pyinstaller")
-foreach ($mod in $modules) {
-    try {
-        Write-Host "📦 Menginstal modul: $mod ..."
-        python -m pip install $mod -q
-        Write-Host "✅ Modul $mod berhasil diinstal."
-    } catch {
-        Write-Host "⚠️ Gagal menginstal $mod."
-    }
+# tkinter biasanya sudah termasuk dalam instalasi Python standar
+# Jika ada error, kita bisa menginstalnya dengan:
+# pip install tk
+
+# 3. Membuat folder C:/Net's/ jika belum ada
+$netsFolder = "C:\Net's"
+if (-not (Test-Path -Path $netsFolder)) {
+    New-Item -ItemType Directory -Path $netsFolder -Force
 }
 
-# 4. Siapkan folder instalasi
-$installPath = "C:\Net"
-if (!(Test-Path $installPath)) {
-    Write-Host "📁 Membuat folder instalasi di: $installPath"
-    New-Item -Path $installPath -ItemType Directory | Out-Null
-}
+# 4. Mengunduh Net.py dari GitHub
+$netUrl = "https://github.com/Bruhrbx/Net/raw/main/File/Net.py"
+$netPath = "$netsFolder\Net.py"
+Write-Host "🔍️ Memastikan Dan Mengunduh Net.py dari GitHub..."
+Invoke-WebRequest -Uri $netUrl -OutFile $netPath
 
-# 5. Unduh file Python ke folder instalasi
-$pyUrl = "https://raw.githubusercontent.com/Bruhrbx/Net/main/File/Net's.py"
-$appPath = "$installPath\Nets.py"
-
-try {
-    Write-Host "🌐 Mengunduh aplikasi..."
-    Invoke-WebRequest -Uri $pyUrl -OutFile $appPath
-    Write-Host "✅ Aplikasi disimpan di: $appPath"
-} catch {
-    Write-Host "❌ Gagal mengunduh file Python."
-    exit
-}
-
-# 6. Jalankan aplikasinya
-Write-Host "🚀 Menjalankan aplikasi..."
-Start-Process "python" -ArgumentList "`"$appPath`""
-
-# 7. Buat shortcut ke Desktop
-$WshShell = New-Object -ComObject WScript.Shell
-$desktop = [Environment]::GetFolderPath("Desktop")
-$shortcut = $WshShell.CreateShortcut("$desktop\Net App.lnk")
+# 5. Membuat shortcut di desktop
+$shortcutPath = "$env:USERPROFILE\Desktop\Net's.lnk"
+$wshShell = New-Object -ComObject WScript.Shell
+$shortcut = $wshShell.CreateShortcut($shortcutPath)
 $shortcut.TargetPath = "python"
-$shortcut.Arguments = "`"$appPath`""
-$shortcut.WorkingDirectory = $installPath
-$shortcut.WindowStyle = 1
-$shortcut.IconLocation = "python.exe,0"
+$shortcut.Arguments = "`"$netPath`""
+$shortcut.WorkingDirectory = $netsFolder
+$shortcut.IconLocation = "$netPath,0"
 $shortcut.Save()
 
-Write-Host "📎 Shortcut 'Net App.lnk' telah dibuat di Desktop!"
+Write-Host "============================================================"
+Write-Host "Instalasi selesai. Shortcut Net's telah dibuat di desktop. :D"
+Write-Host "============================================================"
